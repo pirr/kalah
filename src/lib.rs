@@ -155,7 +155,7 @@ impl GameProcess {
             &mut self.game_field.side_two
         };
 
-        let mut stones = curr_side.holes[withdrawal_hole_indx]
+        let stones = curr_side.holes[withdrawal_hole_indx]
             .stones
             .drain(..)
             .collect::<Vec<_>>();
@@ -172,7 +172,8 @@ impl GameProcess {
             2 // side_two
         };
 
-        while let Some(stone) = stones.pop() {
+        for stone in stones {
+
             if hole_index == self.game_config.hole_nums {
                 // Last hole, deposit into score
                 if self.is_player_one_turn {
