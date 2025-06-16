@@ -17,6 +17,7 @@ fn start_game() {
 
 }
 
+#[test]
 fn make_move() {
     let args = ["", "6", "6"];
     let game_config = GameConfig::build(&args).unwrap();
@@ -26,5 +27,51 @@ fn make_move() {
     
     let game_field = GameField::build(&game_config);
 
-    // move_stone(game_field.side_one);
+    let player_one_name = "P1".to_string();
+    let player_two_name = "P2".to_string();
+
+    let mut game_process = GameProcess::build(game_field, player_one_name, player_two_name, game_config);
+
+    assert!(game_process.is_player_one_turn);
+
+    _ = game_process.move_stones_from_hole(1);
+
+    assert_eq!(game_process.game_field.side_one.holes[1].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[2].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[3].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[4].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[5].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[0].stones.len(), 0);
+    assert_eq!(game_process.player_one.score, 1);
+    assert_eq!(game_process.total_turns, 1);
+    assert!(game_process.is_player_one_turn);
+
+    let err = game_process.move_stones_from_hole(1);
+    assert_eq!(err, Err("Selected hole is empty".into()));
+
+    // nothing changed
+    assert_eq!(game_process.game_field.side_one.holes[1].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[2].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[3].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[4].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[5].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[0].stones.len(), 0);
+    assert_eq!(game_process.total_turns, 1);
+    assert_eq!(game_process.player_one.score, 1);
+    assert!(game_process.is_player_one_turn);
+
+    // player one move and turn on player two
+    _ = game_process.move_stones_from_hole(2);
+    assert_eq!(game_process.game_field.side_one.holes[2].stones.len(), 8);
+    assert_eq!(game_process.game_field.side_one.holes[3].stones.len(), 8);
+    assert_eq!(game_process.game_field.side_one.holes[4].stones.len(), 8);
+    assert_eq!(game_process.game_field.side_one.holes[5].stones.len(), 8);
+
+    assert_eq!(game_process.game_field.side_two.holes[0].stones.len(), 7);
+    assert_eq!(game_process.game_field.side_one.holes[1].stones.len(), 0);
+
+    assert_eq!(game_process.total_turns, 2);
+    assert_eq!(game_process.player_one.score, 2);
+    assert!(!game_process.is_player_one_turn);
+
 }

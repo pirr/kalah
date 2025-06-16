@@ -1,11 +1,13 @@
+use std::cmp::max;
+
 use rand::seq::{ IndexedRandom };
 use rand;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 pub struct GameConfig {
-    pub stone_nums_in_hole: u128,
-    pub hole_nums: u128,
+    pub stone_nums_in_hole: usize,
+    pub hole_nums: usize,
 }
 
 #[derive(Debug, EnumIter, Clone, Copy)]
@@ -63,14 +65,14 @@ impl GameConfig {
 
     pub fn build(args: &[&str; 3]) -> Result<GameConfig, &'static str> {
         if args.len() < 3 {
-            return Err("Not enough arguments")
+            return Err("Not enough arguments");
         }
 
-        let stone_nums_in_hole: u128 = args[1]
+        let stone_nums_in_hole: usize = args[1]
             .parse()
             .map_err(|_| "Stone number in hole should be a number")?;
 
-        let hole_nums: u128 = args[2]
+        let hole_nums: usize = args[2]
             .parse()
             .map_err(|_| "Hole number should be a number")?;
 
@@ -112,35 +114,103 @@ impl GameField {
 pub struct GameProcess {
     pub player_one: Player,
     pub player_two: Player,
-    game_field: GameField,
+    game_config: GameConfig,
+    pub game_field: GameField,
     pub turn: i32,
     pub is_player_one_turn: bool,
+    pub is_side_one: bool,
+    pub total_turns: usize,
 }
 
-// impl GameProcess {
+impl GameProcess {
 
-//     pub fn build(game_field: GameField, player_one_name: String, player_two_name: String) -> GameProcess {
+    pub fn build(game_field: GameField, player_one_name: String, player_two_name: String, game_config: GameConfig) -> GameProcess {
         
-//         GameProcess { 
-//             player_one: Player {
-//                     name: player_one_name, 
-//                     score: 0 
-//                 },
-//             player_two: Player { 
-//                     name: player_two_name, 
-//                     score: 0 
-//                 }, 
-//             game_field: game_field, 
-//             turn: 0,
-//             is_player_one_turn: true 
-//         }
-//     }
+        GameProcess { 
+            player_one: Player {
+                    name: player_one_name, 
+                    score: 0 
+                },
+            player_two: Player { 
+                    name: player_two_name, 
+                    score: 0 
+                }, 
+            game_field: game_field, 
+            turn: 0,
+            game_config: game_config,
+            is_player_one_turn: true,
+            is_side_one: true,
+            total_turns: 0,
+        }
+    }
     
-//     pub fn move_stone(&mut self) {
+    pub fn move_stones_from_hole(&mut self, hole_num: usize) -> Result<(), String> {
+        if hole_num == 0 || hole_num > self.game_config.hole_nums {
+            return Err(format!(
+                "hole_num must be in range 1..={} (got {})",
+                self.game_config.hole_nums, hole_num
+            ));
+        }
 
-//         if self.is_player_one_turn {
-//             pl
-//         }
+        let withdrawal_hole_indx = hole_num - 1;
 
-//     }
-// }
+        // Get the mutable reference to the current player's side
+        let curr_side = if self.is_player_one_turn {
+            &mut self.game_field.side_one
+        } else {
+            &mut self.game_field.side_two
+        };
+
+        let mut stones = curr_side.holes[withdrawal_hole_indx]
+            .stones
+            .drain(..)
+            .collect::<Vec<_>>();
+
+        if stones.is_empty() {
+            return Err("Selected hole is empty".into());
+        }
+
+        // Set up index and side references for distributing stones
+        let mut hole_index = withdrawal_hole_indx + 1;
+        let mut active_side = if self.is_player_one_turn {
+            1 // side_one
+        } else {
+            2 // side_two
+        };
+
+        while let Some(stone) = stones.pop() {
+            if hole_index == self.game_config.hole_nums {
+                // Last hole, deposit into score
+                if self.is_player_one_turn {
+                    self.player_one.score += 1;
+                } else {
+                    self.player_two.score += 1;
+                }
+
+                // Switch sides and reset hole index
+                hole_index = 0;
+                active_side = if active_side == 1 { 2 } else { 1 };
+            } else {
+                let side = if active_side == 1 {
+                    &mut self.game_field.side_one
+                } else {
+                    &mut self.game_field.side_two
+                };
+
+                side.holes[hole_index].stones.push(stone);
+                hole_index += 1;
+            }
+        }
+        
+        // If last stone did not land in score, switch turn
+        if hole_index != 0 {
+            self.is_player_one_turn = !self.is_player_one_turn;
+        }
+
+        self.total_turns += 1;
+
+        Ok(())
+    }
+
+
+}
