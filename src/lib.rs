@@ -1,5 +1,3 @@
-use std::cmp::max;
-
 use rand::seq::{ IndexedRandom };
 use rand;
 use strum::IntoEnumIterator;
@@ -43,10 +41,6 @@ pub struct Player {
     pub name: String,
     pub score: u32,
 }
-
-// impl Player {
-//     pub fn choose_hole(hole: )
-// }
 
 pub struct GameField {
     pub side_one: Side,
