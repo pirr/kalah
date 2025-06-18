@@ -2,8 +2,7 @@ use kalah::*;
 
 #[test]
 fn start_game() {
-    let args = ["", "6", "6"];
-    let game_config = GameConfig::build(&args).unwrap();
+    let game_config = GameConfig::build(6,6);
     
     assert_eq!(game_config.hole_nums, 6);
     assert_eq!(game_config.stone_nums_in_hole, 6);
@@ -14,13 +13,11 @@ fn start_game() {
     assert_eq!(game_field.side_two.holes.len(), 6);
     assert_eq!(game_field.side_one.holes[0].stones.len(), 6);
     assert_eq!(game_field.side_two.holes[0].stones.len(), 6);
-
 }
 
 #[test]
 fn make_move() {
-    let args = ["", "6", "6"];
-    let game_config = GameConfig::build(&args).unwrap();
+    let game_config = GameConfig::build(6, 6);
     
     assert_eq!(game_config.hole_nums, 6);
     assert_eq!(game_config.stone_nums_in_hole, 6);
@@ -46,8 +43,10 @@ fn make_move() {
     assert_eq!(game_process.total_turns, 1);
     assert!(game_process.is_player_one_turn);
 
-    let err = game_process.move_stones_from_hole(1);
-    assert_eq!(err, Err("Selected hole is empty".into()));
+    match game_process.move_stones_from_hole(1) {
+        Ok(_) => panic!("Expected error but got Ok"),
+        Err(err) => assert_eq!(err, "Selected hole is empty"),
+    }
 
     // nothing changed
     assert_eq!(game_process.game_field.side_one.holes[1].stones.len(), 7);
@@ -73,5 +72,4 @@ fn make_move() {
     assert_eq!(game_process.total_turns, 2);
     assert_eq!(game_process.player_one.score, 2);
     assert!(!game_process.is_player_one_turn);
-
 }

@@ -42,6 +42,11 @@ pub struct Player {
     pub score: u32,
 }
 
+pub enum GameStatus {
+    Run,
+    Finished,
+} 
+
 pub struct GameField {
     pub side_one: Side,
     pub side_two: Side,
@@ -57,26 +62,32 @@ where
 
 impl GameConfig {
 
-    pub fn build(args: &[&str; 3]) -> Result<GameConfig, &'static str> {
-        if args.len() < 3 {
-            return Err("Not enough arguments");
-        }
-
-        let stone_nums_in_hole: usize = args[1]
-            .parse()
-            .map_err(|_| "Stone number in hole should be a number")?;
-
-        let hole_nums: usize = args[2]
-            .parse()
-            .map_err(|_| "Hole number should be a number")?;
-
-        Ok(GameConfig { 
+    pub fn build(stone_nums_in_hole: usize, hole_nums: usize) -> GameConfig {
+        GameConfig { 
             stone_nums_in_hole, 
             hole_nums,
-        })
+        }
     }
-}
 
+    // pub fn build(args: &[&str; 3]) -> Result<GameConfig, &'static str> {
+    //     if args.len() < 3 {
+    //         return Err("Not enough arguments");
+    //     }
+
+    //     let stone_nums_in_hole: usize = args[1]
+    //         .parse()
+    //         .map_err(|_| "Stone number in hole should be a number")?;
+
+    //     let hole_nums: usize = args[2]
+    //         .parse()
+    //         .map_err(|_| "Hole number should be a number")?;
+
+    //     Ok(GameConfig { 
+    //         stone_nums_in_hole, 
+    //         hole_nums,
+    //     })
+    // }
+}
 
 impl GameField {
 
@@ -138,7 +149,8 @@ impl GameProcess {
         }
     }
     
-    pub fn move_stones_from_hole(&mut self, hole_num: usize) -> Result<(), String> {
+    pub fn move_stones_from_hole(&mut self, hole_num: usize) -> Result<GameStatus, String> {
+
         if hole_num == 0 || hole_num > self.game_config.hole_nums {
             return Err(format!(
                 "hole_num must be in range 1..={} (got {})",
@@ -149,13 +161,9 @@ impl GameProcess {
         let withdrawal_hole_indx = hole_num - 1;
 
         // Get the mutable reference to the current player's side
-        let curr_side = if self.is_player_one_turn {
-            &mut self.game_field.side_one
-        } else {
-            &mut self.game_field.side_two
-        };
+        let curr_side_mut = self.get_curren_side_mut();
 
-        let stones = curr_side.holes[withdrawal_hole_indx]
+        let stones = curr_side_mut.holes[withdrawal_hole_indx]
             .stones
             .drain(..)
             .collect::<Vec<_>>();
@@ -167,9 +175,9 @@ impl GameProcess {
         // Set up index and side references for distributing stones
         let mut hole_index = withdrawal_hole_indx + 1;
         let mut active_side = if self.is_player_one_turn {
-            1 // side_one
+            1
         } else {
-            2 // side_two
+            2
         };
 
         for stone in stones {
@@ -204,8 +212,27 @@ impl GameProcess {
 
         self.total_turns += 1;
 
-        Ok(())
+
+        if self.is_game_finish() { Ok(GameStatus::Finished) } else { Ok(GameStatus::Run) }
     }
 
+    fn is_game_finish(&self) -> bool {
+        for side in [&self.game_field.side_one, &self.game_field.side_two] {
+            for hole in &side.holes {
+                if !hole.stones.is_empty() {
+                    break;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
 
+    fn get_curren_side_mut(&mut self) -> &mut Side {
+        if self.is_player_one_turn {
+            &mut self.game_field.side_one
+        } else {
+            &mut self.game_field.side_two
+        }
+    }
 }
