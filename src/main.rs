@@ -2,7 +2,7 @@ use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use kalah::{GameConfig, GameField, GameProcess, Player};
+use kalah::{GameConfig, GameField, GameProcess};
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
@@ -11,11 +11,6 @@ use ratatui::{
 };
 use std::{char, error::Error, io};
 
-#[derive(Debug, Default)]
-pub struct App {
-    counter: u8,
-    exit: bool,
-}
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Setup terminal
@@ -51,8 +46,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, game_process: &mut GameProcess) -> io::Result<()> {
-    let mut selected_hole: Option<usize> = None;
-    let hole_nums = game_process.game_config.hole_nums.to_string().chars().next().unwrap();
 
     loop {
         terminal.draw(|f| {
@@ -94,7 +87,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, game_proc
                 match key.code {
                     KeyCode::Char(c) if c >= '1' && c <= char::from_digit(game_process.game_config.hole_nums as u32, 10).unwrap() => {
                         let hole_num = c.to_digit(10).unwrap() as usize;
-                        selected_hole = Some(hole_num);
 
                         // Now you can use the selected hole
                         let _ = game_process.move_stones_from_hole(hole_num);
