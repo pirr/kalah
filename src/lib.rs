@@ -1,3 +1,5 @@
+use std::usize;
+
 use rand::seq::{ IndexedRandom };
 use rand;
 use strum::IntoEnumIterator;
@@ -39,7 +41,7 @@ pub struct Side {
 
 pub struct Player {
     pub name: String,
-    pub score: u32,
+    pub score: usize,
 }
 
 pub enum GameStatus {
@@ -68,25 +70,6 @@ impl GameConfig {
             hole_nums,
         }
     }
-
-    // pub fn build(args: &[&str; 3]) -> Result<GameConfig, &'static str> {
-    //     if args.len() < 3 {
-    //         return Err("Not enough arguments");
-    //     }
-
-    //     let stone_nums_in_hole: usize = args[1]
-    //         .parse()
-    //         .map_err(|_| "Stone number in hole should be a number")?;
-
-    //     let hole_nums: usize = args[2]
-    //         .parse()
-    //         .map_err(|_| "Hole number should be a number")?;
-
-    //     Ok(GameConfig { 
-    //         stone_nums_in_hole, 
-    //         hole_nums,
-    //     })
-    // }
 }
 
 impl GameField {
@@ -163,7 +146,7 @@ impl GameProcess {
         // Get the mutable reference to the current player's side
         let curr_side_mut = self.get_curren_side_mut();
 
-        let stones = curr_side_mut.holes[withdrawal_hole_indx]
+        let stones = &mut curr_side_mut.holes[withdrawal_hole_indx]
             .stones
             .drain(..)
             .collect::<Vec<_>>();
@@ -180,14 +163,19 @@ impl GameProcess {
             2
         };
 
-        for stone in stones {
+        while !stones.is_empty() {
+
+            let stone = stones.pop().unwrap();
 
             if hole_index == self.game_config.hole_nums {
                 // Last hole, deposit into score
-                if self.is_player_one_turn {
+                if self.is_player_one_turn && active_side == 1  {
                     self.player_one.score += 1;
-                } else {
+                }
+                else if !self.is_player_one_turn && active_side == 2 {
                     self.player_two.score += 1;
+                } else {
+                    stones.push(stone);
                 }
 
                 // Switch sides and reset hole index
@@ -204,28 +192,30 @@ impl GameProcess {
                 hole_index += 1;
             }
         }
+
+        if self.is_game_finish() { 
+            self.finalize_score();
+            return Ok(GameStatus::Finished);
+        } 
+
+        self.change_side(hole_index, active_side);
         
         // If last stone did not land in score, switch turn
-        if hole_index != 0 {
-            self.is_player_one_turn = !self.is_player_one_turn;
-        }
-
+        
         self.total_turns += 1;
 
-
-        if self.is_game_finish() { Ok(GameStatus::Finished) } else { Ok(GameStatus::Run) }
+        Ok(GameStatus::Run)
     }
 
-    fn is_game_finish(&self) -> bool {
-        for side in [&self.game_field.side_one, &self.game_field.side_two] {
-            for hole in &side.holes {
-                if !hole.stones.is_empty() {
-                    break;
-                }
+    fn is_game_finish(&mut self) -> bool {
+        let curr_side_mut = self.get_curren_side_mut();
+
+        for hole in &curr_side_mut.holes {
+            if !hole.stones.is_empty() {
+                return false;
             }
-            return true;
         }
-        return false;
+        true
     }
 
     fn get_curren_side_mut(&mut self) -> &mut Side {
@@ -233,6 +223,30 @@ impl GameProcess {
             &mut self.game_field.side_one
         } else {
             &mut self.game_field.side_two
+        }
+    }
+
+    fn finalize_score(&mut self) {
+        let (side, player) = match self.is_player_one_turn {
+            true => (&self.game_field.side_two, &mut self.player_two),
+            _ => (&self.game_field.side_one, &mut self.player_one),
+        };
+
+        for hole in &side.holes {
+            player.score += hole.stones.len();
+        }
+
+    }
+
+    fn change_side(&mut self, hole_index: usize, active_side: u128) {
+        // println!("Is player one turn {}, Active side {}", self.is_player_one_turn, active_side);
+
+        if hole_index != 0 {
+            self.is_player_one_turn = !self.is_player_one_turn;
+        }
+
+        else if !(self.is_player_one_turn && active_side == 2) && !(!self.is_player_one_turn && active_side == 1) {
+            self.is_player_one_turn = !self.is_player_one_turn;
         }
     }
 }
