@@ -2,7 +2,7 @@ use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use kalah::{GameConfig, GameField, GameProcess};
+use kalah::{GameConfig, GameField, GameProcess, GameStatus};
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let game_config = GameConfig {stone_nums_in_hole: 6, hole_nums: 6};
+    let game_config = GameConfig {stone_nums_in_hole: 3, hole_nums: 2};
     let game_field = GameField::build(&game_config);
     let player_one_name = "Player1".to_string();
     let player_two_name = "Player2".to_string();
@@ -66,8 +66,10 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, game_proc
                 side_strs_vec.push(side_str_vec.join(" "));
             }
 
-            let top_row = Paragraph::new(format!("{}: {}", "P2".to_string(), side_strs_vec[1].to_string()));
-            let bottom_row = Paragraph::new(format!("{}: {}", "P1".to_string(), side_strs_vec[0].to_string()));
+            side_strs_vec[1] = side_strs_vec[1].chars().rev().collect();
+
+            let top_row = Paragraph::new(format!("{}: {}. Score: {}", "P2".to_string(), side_strs_vec[1].to_string(), game_process.player_two.score));
+            let bottom_row = Paragraph::new(format!("{}: {}. Score: {}", "P1".to_string(), side_strs_vec[0].to_string(), game_process.player_one.score));
             
             let player_turn_str = match game_process.is_player_one_turn {
                 true => format!("Is {} turn", game_process.player_one.name),
@@ -85,11 +87,46 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, game_proc
         if event::poll(std::time::Duration::from_millis(200))? {
             if let Event::Key(key) = event::read()? {
                 match key.code {
-                    KeyCode::Char(c) if c >= '1' && c <= char::from_digit(game_process.game_config.hole_nums as u32, 10).unwrap() => {
+
+                    KeyCode::Char(c) if c >= '1'
+                        && c <= char::from_digit(game_process.game_config.hole_nums as u32, 10).unwrap() =>
+                    {
                         let hole_num = c.to_digit(10).unwrap() as usize;
 
-                        // Now you can use the selected hole
-                        let _ = game_process.move_stones_from_hole(hole_num);
+                        match game_process.move_stones_from_hole(hole_num) {
+                            Ok(GameStatus::Finished) => {
+                                // Clear screen and draw final score
+                                terminal.draw(|f| {
+                                    let score_text = format!(
+                                        "🏁 Game Over!\n\nPlayer 1 Score: {}\nPlayer 2 Score: {}\n\nPress any key to exit.",
+                                        game_process.player_one.score,
+                                        game_process.player_two.score
+                                    );
+
+                                    let block = Block::default().title("Kalah").borders(Borders::ALL);
+                                    let paragraph = Paragraph::new(score_text)
+                                        .block(block)
+                                        .alignment(ratatui::layout::Alignment::Center);
+
+                                    f.render_widget(paragraph, f.area());
+                                })?;
+
+                                // Wait for user to press any key before quitting
+                                loop {
+                                    if let Event::Key(_) = event::read()? {
+                                        return Ok(()); // Exit the game
+                                    }
+                                }
+                            }
+
+                            Ok(_) => continue, // Game continues
+
+                            Err(e) => {
+                                // Optional: Show error message if needed
+                                // eprintln!("Move error: {}", e);
+                                continue;
+                            }
+                        }
                     }
 
                     KeyCode::Char('q') => return Ok(()),
