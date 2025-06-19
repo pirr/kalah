@@ -74,7 +74,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, game_proc
                 _ => format!("Is {} turn", game_process.player_two.name),
             };
             let block = Block::default()
-                .title(format!("Kalah - Press 1–6 to move, q to quit. {}", player_turn_str))
+                .title(format!("Kalah - Press 1–{} to move, q to quit. {}", game_process.game_config.hole_nums, player_turn_str))
                 .borders(Borders::ALL);
 
             f.render_widget(block, f.area());
