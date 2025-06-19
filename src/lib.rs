@@ -119,7 +119,7 @@ impl GameField {
 pub struct GameProcess {
     pub player_one: Player,
     pub player_two: Player,
-    game_config: GameConfig,
+    pub game_config: GameConfig,
     pub game_field: GameField,
     pub turn: i32,
     pub is_player_one_turn: bool,
