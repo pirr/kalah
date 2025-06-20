@@ -2,7 +2,17 @@ use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use kalah::{GameConfig, GameField, GameProcess, GameStatus};
+
+mod game_config;
+mod game_field;
+mod game_process;
+mod game_status;
+mod player;
+
+use kalah::game_config::{ GameConfig };
+use kalah::game_field::{ GameField };
+use kalah::game_process::{ GameProcess };
+use kalah::game_status::{ GameStatus };
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},

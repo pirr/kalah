@@ -1,4 +1,6 @@
-use kalah::*;
+use kalah::game_config::*;
+use kalah::game_field::*;
+use kalah::game_process::*;
 
 #[test]
 fn start_game() {
