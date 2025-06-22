@@ -101,17 +101,17 @@ impl GameProcess {
 
                 side.holes[hole_index].stones.push(stone);
                 last_turn_hole.hole_index = hole_index;
+                last_turn_hole.side = active_side;
                 hole_index += 1;
             }
         }
 
-        // TODO fix logic here
-        // let single_stone_score = self.last_stone_single_score(last_turn_hole);
-        // let player = match self.is_player_one_turn {
-        //     true => &mut self.player_one,
-        //     _ => &mut self.player_two,
-        // };
-        // player.score += single_stone_score;
+        let single_stone_score = self.last_stone_single_score(last_turn_hole);
+        let player = match self.is_player_one_turn {
+            true => &mut self.player_one,
+            _ => &mut self.player_two,
+        };
+        player.score += single_stone_score;
 
         self.total_turns += 1;
 
@@ -156,15 +156,11 @@ impl GameProcess {
     }
 
     fn finalize_score(&mut self) {
-        let (side, player) = match self.is_player_one_turn {
-            true => (&self.game_field.side_two, &mut self.player_two),
-            _ => (&self.game_field.side_one, &mut self.player_one),
-        };
-
-        for hole in &side.holes {
-            player.score += hole.stones.len();
+        for (side, player) in [(&self.game_field.side_one, &mut self.player_one), (&self.game_field.side_two, &mut self.player_two)] {
+            for hole in &side.holes {
+                player.score += hole.stones.len();
+            }
         }
-
     }
 
     fn change_side(&mut self, hole_index: usize, active_side: u8) {
@@ -182,11 +178,11 @@ impl GameProcess {
     fn last_stone_single_score(&mut self, last_turn_hole: LastTurnHole) -> usize {
 
         if self.is_player_one_turn && last_turn_hole.side == 1 && self.get_curren_side().holes[last_turn_hole.hole_index].stones.len() == 1 {
-            return self.game_field.side_two.holes[self.game_config.hole_nums - last_turn_hole.hole_index].stones.drain(..).collect::<Vec<_>>().len();
+            return self.game_field.side_two.holes[self.game_config.hole_nums - last_turn_hole.hole_index - 1].stones.drain(..).collect::<Vec<_>>().len();
         }
 
         else if !self.is_player_one_turn && last_turn_hole.side == 2 && self.get_curren_side().holes[last_turn_hole.hole_index].stones.len() == 1 {
-           return self.game_field.side_one.holes[self.game_config.hole_nums - last_turn_hole.hole_index].stones.drain(..).collect::<Vec<_>>().len();
+           return self.game_field.side_one.holes[self.game_config.hole_nums - last_turn_hole.hole_index - 1].stones.drain(..).collect::<Vec<_>>().len();
         }
 
         0
