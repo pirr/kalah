@@ -3,16 +3,12 @@ use crossterm::{
     execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
-mod game_config;
-mod game_field;
-mod game_process;
-mod game_status;
-mod player;
+pub mod game;
 
-use kalah::game_config::{ GameConfig };
-use kalah::game_field::{ GameField };
-use kalah::game_process::{ GameProcess };
-use kalah::game_status::{ GameStatus };
+use game::game_config::{ GameConfig };
+use game::game_field::{ GameField };
+use game::game_process::{ GameProcess };
+use game::game_status::{ GameStatus };
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},

@@ -1,7 +1,7 @@
-use crate::game_config::GameConfig;
-use crate::game_field::{ self, GameField, Side };
-use crate::player::{self, Player};
-use crate::game_status::GameStatus;
+use super::game_config::GameConfig;
+use super::game_field::{ GameField, Side };
+use super::player::{ Player};
+use super::game_status::GameStatus;
 
 pub struct GameProcess {
     pub player_one: Player,
@@ -136,7 +136,6 @@ impl GameProcess {
                 return true;
             }
         }
-        
         false
     }
 
