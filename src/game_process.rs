@@ -1,6 +1,6 @@
 use crate::game_config::GameConfig;
-use crate::game_field::{ GameField, Side };
-use crate::player::Player;
+use crate::game_field::{ self, GameField, Side };
+use crate::player::{self, Player};
 use crate::game_status::GameStatus;
 
 pub struct GameProcess {
@@ -10,6 +10,13 @@ pub struct GameProcess {
     pub game_field: GameField,
     pub is_player_one_turn: bool,
     pub total_turns: usize,
+}
+
+
+pub struct LastTurnHole {
+    pub side: u8,
+    pub hole_index: usize,
+    pub player_num: u8,
 }
 
 impl GameProcess {
@@ -63,8 +70,10 @@ impl GameProcess {
             2
         };
 
-        while !stones.is_empty() {
+        let mut last_turn_hole = LastTurnHole {side: 1, hole_index: 0, player_num: 1};
 
+        while !stones.is_empty() {
+            
             let stone = stones.pop().unwrap();
 
             if hole_index == self.game_config.hole_nums {
@@ -80,6 +89,8 @@ impl GameProcess {
 
                 // Switch sides and reset hole index
                 hole_index = 0;
+                last_turn_hole.hole_index = hole_index;
+                last_turn_hole.side = active_side;
                 active_side = if active_side == 1 { 2 } else { 1 };
             } else {
                 let side = if active_side == 1 {
@@ -89,33 +100,44 @@ impl GameProcess {
                 };
 
                 side.holes[hole_index].stones.push(stone);
+                last_turn_hole.hole_index = hole_index;
                 hole_index += 1;
             }
         }
 
+        // TODO fix logic here
+        // let single_stone_score = self.last_stone_single_score(last_turn_hole);
+        // let player = match self.is_player_one_turn {
+        //     true => &mut self.player_one,
+        //     _ => &mut self.player_two,
+        // };
+        // player.score += single_stone_score;
+
+        self.total_turns += 1;
+
         if self.is_game_finish() { 
             self.finalize_score();
             return Ok(GameStatus::Finished);
-        } 
+        }
 
         self.change_side(hole_index, active_side);
-        
-        // If last stone did not land in score, switch turn
-        
-        self.total_turns += 1;
 
         Ok(GameStatus::Run)
     }
 
     fn is_game_finish(&mut self) -> bool {
-        let curr_side_mut = self.get_curren_side_mut();
+        for side in [&self.game_field.side_one, &self.game_field.side_two] {
+            let mut stone_sum = 0;
+            for hole in &side.holes {
+                stone_sum += hole.stones.len();
+            }
 
-        for hole in &curr_side_mut.holes {
-            if !hole.stones.is_empty() {
-                return false;
+            if stone_sum == 0 {
+                return true;
             }
         }
-        true
+        
+        false
     }
 
     fn get_curren_side_mut(&mut self) -> &mut Side {
@@ -123,6 +145,14 @@ impl GameProcess {
             &mut self.game_field.side_one
         } else {
             &mut self.game_field.side_two
+        }
+    }
+
+    fn get_curren_side(&self) -> &Side {
+        if self.is_player_one_turn {
+            &self.game_field.side_one
+        } else {
+            &self.game_field.side_two
         }
     }
 
@@ -138,7 +168,7 @@ impl GameProcess {
 
     }
 
-    fn change_side(&mut self, hole_index: usize, active_side: u128) {
+    fn change_side(&mut self, hole_index: usize, active_side: u8) {
         // println!("Is player one turn {}, Active side {}", self.is_player_one_turn, active_side);
 
         if hole_index != 0 {
@@ -148,5 +178,18 @@ impl GameProcess {
         else if !(self.is_player_one_turn && active_side == 2) && !(!self.is_player_one_turn && active_side == 1) {
             self.is_player_one_turn = !self.is_player_one_turn;
         }
+    }
+
+    fn last_stone_single_score(&mut self, last_turn_hole: LastTurnHole) -> usize {
+
+        if self.is_player_one_turn && last_turn_hole.side == 1 && self.get_curren_side().holes[last_turn_hole.hole_index].stones.len() == 1 {
+            return self.game_field.side_two.holes[self.game_config.hole_nums - last_turn_hole.hole_index].stones.drain(..).collect::<Vec<_>>().len();
+        }
+
+        else if !self.is_player_one_turn && last_turn_hole.side == 2 && self.get_curren_side().holes[last_turn_hole.hole_index].stones.len() == 1 {
+           return self.game_field.side_one.holes[self.game_config.hole_nums - last_turn_hole.hole_index].stones.drain(..).collect::<Vec<_>>().len();
+        }
+
+        0
     }
 }
