@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let game_config = GameConfig {stone_nums_in_hole: 3, hole_nums: 2};
+    let game_config = GameConfig {stone_nums_in_hole: 6, hole_nums: 6};
     let game_field = GameField::build(&game_config);
     let player_one_name = "Player1".to_string();
     let player_two_name = "Player2".to_string();
@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     terminal.show_cursor()?;
 
     if let Err(err) = res {
-        println!("Error: {:?}", err);
+        panic!("Error: {:?}", err);
     }
 
     Ok(())
@@ -58,24 +58,34 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, game_proc
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .margin(2)
-                .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+                .constraints([Constraint::Length(2), Constraint::Length(1), Constraint::Min(0)].as_ref())
                 .split(f.area());
 
-            let mut side_strs_vec = Vec::new();
+            let mut side_strs = Vec::new();
             for side in [&game_process.game_field.side_one, &game_process.game_field.side_two] {
-                let mut side_str_vec = Vec::new();
+                let mut side_vec = Vec::new();
                 
                 for hole in &side.holes {
-                    side_str_vec.push(format!("[{}]", hole.stones.len().to_string()));
+                    side_vec.push(hole.stones.len());
                 }
                 
-                side_strs_vec.push(side_str_vec.join(" "));
+                side_strs.push(side_vec);
             }
 
-            side_strs_vec[1] = side_strs_vec[1].chars().rev().collect();
+            side_strs[1] = side_strs[1].iter().copied().rev().collect();
 
-            let top_row = Paragraph::new(format!("{}: {}. Score: {}", "P2".to_string(), side_strs_vec[1].to_string(), game_process.player_two.score));
-            let bottom_row = Paragraph::new(format!("{}: {}. Score: {}", "P1".to_string(), side_strs_vec[0].to_string(), game_process.player_one.score));
+            let side_strs_str: Vec<String> = side_strs
+                .iter()
+                .map(|ss| 
+                    ss.iter()
+                        .map(|el| format!("[{}]", el))
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                ).collect();
+
+            let top_row = Paragraph::new(format!("{}: {}", "P2".to_string(), side_strs_str[1]));
+            let bottom_row = Paragraph::new(format!("{}: {}", side_strs_str[0], "P1".to_string()));
+            let midle_row = Paragraph::new(format!("{}{}{}", game_process.player_two.score, " ".repeat(side_strs_str[0].len() + 1), game_process.player_one.score));
             
             let player_turn_str = match game_process.is_player_one_turn {
                 true => format!("Is {} turn", game_process.player_one.name),
@@ -87,7 +97,8 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, game_proc
 
             f.render_widget(block, f.area());
             f.render_widget(top_row, chunks[0]);
-            f.render_widget(bottom_row, chunks[1]);
+            f.render_widget(midle_row, chunks[1]);
+            f.render_widget(bottom_row, chunks[2]);
         })?;
 
         if event::poll(std::time::Duration::from_millis(200))? {
