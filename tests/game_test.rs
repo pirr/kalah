@@ -80,4 +80,11 @@ fn make_move() {
     assert_eq!(game_process.total_turns, 2);
     assert_eq!(game_process.player_one.score, 2);
     assert!(!game_process.is_player_one_turn);
+
+    _ = game_process.move_stones_from_hole(1);
+
+    // single stone rule
+    _ = game_process.move_stones_from_hole(1);
+    assert_eq!(game_process.player_one.score, 9);
+
 }
