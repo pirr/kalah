@@ -10,6 +10,10 @@ pub struct GameProcess {
     pub game_field: GameField,
     pub is_player_one_turn: bool,
     pub total_turns: usize,
+    #[cfg(feature = "test_hooks")]
+    pub swap_side_called: bool,
+    #[cfg(feature = "test_hooks")]
+    pub swap_players_called: bool,
 }
 
 
@@ -23,7 +27,7 @@ impl GameProcess {
 
     pub fn build(game_field: GameField, player_one_name: String, player_two_name: String, game_config: GameConfig) -> GameProcess {
         
-        GameProcess { 
+        let game_process = GameProcess { 
             player_one: Player {
                     name: player_one_name, 
                     score: 0 
@@ -36,7 +40,13 @@ impl GameProcess {
             game_config: game_config,
             is_player_one_turn: true,
             total_turns: 0,
-        }
+            #[cfg(feature = "test_hooks")]
+            swap_side_called: false,
+            #[cfg(feature = "test_hooks")]
+            swap_players_called: false,
+        };
+
+        game_process
     }
     
     pub fn move_stones_from_hole(&mut self, hole_num: usize) -> Result<GameStatus, String> {
@@ -106,7 +116,7 @@ impl GameProcess {
             }
         }
 
-        let single_stone_score = self.last_stone_single_score(last_turn_hole);
+        let single_stone_score = self.last_stone_single_score(&last_turn_hole);
         let player = match self.is_player_one_turn {
             true => &mut self.player_one,
             _ => &mut self.player_two,
@@ -122,7 +132,35 @@ impl GameProcess {
 
         self.change_side(hole_index, active_side);
 
+        if self.game_config.is_check_pipe_rule && self.check_pie_rule(&last_turn_hole) {
+            self.swap_side();
+            self.swap_players();
+        };
+
         Ok(GameStatus::Run)
+    }
+
+    fn check_pie_rule(&self, last_turn_hole: &LastTurnHole) -> bool {
+        if last_turn_hole.hole_index == 0 && self.total_turns == 1 && self.is_player_one_turn {
+            return true;
+        }
+        false
+    }
+
+    fn swap_side(&mut self) {
+        std::mem::swap(&mut self.game_field.side_one, &mut self.game_field.side_two);
+        #[cfg(feature = "test_hooks")]
+        {
+            self.swap_side_called = true;
+        }
+    }
+
+    fn swap_players(&mut self) {
+        std::mem::swap(&mut self.player_one, &mut self.player_two);
+        #[cfg(feature = "test_hooks")]
+        {
+            self.swap_players_called = true;
+        }
     }
 
     fn is_game_finish(&mut self) -> bool {
@@ -175,7 +213,7 @@ impl GameProcess {
         }
     }
 
-    fn last_stone_single_score(&mut self, last_turn_hole: LastTurnHole) -> usize {
+    fn last_stone_single_score(&mut self, last_turn_hole: &LastTurnHole) -> usize {
 
         if self.is_player_one_turn && last_turn_hole.side == 1 && self.get_curren_side().holes[last_turn_hole.hole_index].stones.len() == 1 {
             return self.game_field.side_two.holes[self.game_config.hole_nums - last_turn_hole.hole_index - 1].stones.drain(..).collect::<Vec<_>>().len();

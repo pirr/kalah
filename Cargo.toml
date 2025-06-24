@@ -9,3 +9,10 @@ rand = "0.9.1"
 ratatui = "0.29.0"
 strum = "0.27.1"
 strum_macros = "0.27.1"
+
+[dev-dependencies]
+kalah = { path = ".", features = ["test_hooks"] }
+
+[features]
+default = []
+test_hooks = []

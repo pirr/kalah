@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let game_config = GameConfig {stone_nums_in_hole: 6, hole_nums: 6};
+    let game_config = GameConfig {stone_nums_in_hole: 6, hole_nums: 6, is_check_pipe_rule: true};
     let game_field = GameField::build(&game_config);
     let player_one_name = "Player1".to_string();
     let player_two_name = "Player2".to_string();
