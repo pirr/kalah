@@ -84,8 +84,8 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, game_proc
                 ).collect();
 
             let top_row = Paragraph::new(format!("{}: {}", "P2".to_string(), side_strs_str[1]));
-            let bottom_row = Paragraph::new(format!("{}: {}", side_strs_str[0], "P1".to_string()));
-            let midle_row = Paragraph::new(format!("{}{}{}", game_process.player_two.score, " ".repeat(side_strs_str[0].len() + 1), game_process.player_one.score));
+            let bottom_row = Paragraph::new(format!("{}{}: {}", " ".repeat(4), side_strs_str[0], "P1".to_string()));
+            let midle_row = Paragraph::new(format!("{}{}{}", game_process.player_two.score, " ".repeat(side_strs_str[0].len() + 5), game_process.player_one.score));
             
             let player_turn_str = match game_process.is_player_one_turn {
                 true => format!("Is {} turn", game_process.player_one.name),
