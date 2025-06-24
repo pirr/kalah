@@ -134,7 +134,7 @@ impl GameProcess {
 
         if self.game_config.is_check_pipe_rule && self.check_pie_rule(&last_turn_hole) {
             self.swap_side();
-            self.swap_players();
+            self.swap_players_score();
         };
 
         Ok(GameStatus::Run)
@@ -155,8 +155,8 @@ impl GameProcess {
         }
     }
 
-    fn swap_players(&mut self) {
-        std::mem::swap(&mut self.player_one, &mut self.player_two);
+    fn swap_players_score(&mut self) {
+        std::mem::swap(&mut self.player_one.score, &mut self.player_two.score);
         #[cfg(feature = "test_hooks")]
         {
             self.swap_players_called = true;
