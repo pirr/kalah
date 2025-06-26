@@ -1,3 +1,5 @@
+use std::default;
+
 use super::game_config::GameConfig;
 use super::game_field::{ GameField, Side };
 use super::player::{ Player};
@@ -164,17 +166,14 @@ impl GameProcess {
     }
 
     fn is_game_finish(&mut self) -> bool {
-        for side in [&self.game_field.side_one, &self.game_field.side_two] {
-            let mut stone_sum = 0;
-            for hole in &side.holes {
-                stone_sum += hole.stones.len();
-            }
+        let is_empty_side = [&self.game_field.side_one.holes, &self.game_field.side_two.holes]
+            .iter()
+            .map(|holes| {
+                holes.iter().filter(|hole| hole.stones.len() > 0).next().is_none()
+            })
+            .any(|is_empty| is_empty);
 
-            if stone_sum == 0 {
-                return true;
-            }
-        }
-        false
+        return is_empty_side;
     }
 
     fn get_curren_side_mut(&mut self) -> &mut Side {
