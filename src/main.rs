@@ -61,16 +61,9 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>, game_proc
                 .constraints([Constraint::Length(2), Constraint::Length(1), Constraint::Min(0)].as_ref())
                 .split(f.area());
 
-            let mut side_strs = Vec::new();
-            for side in [&game_process.game_field.side_one, &game_process.game_field.side_two] {
-                let mut side_vec = Vec::new();
-                
-                for hole in &side.holes {
-                    side_vec.push(hole.stones.len());
-                }
-                
-                side_strs.push(side_vec);
-            }
+            let mut side_strs: Vec<Vec<usize>> = [&game_process.game_field.side_one, &game_process.game_field.side_two].iter().map(|side|
+                side.holes.iter().map(|hole| hole.stones.len()).collect::<Vec<_>>()
+            ).collect();
 
             side_strs[1] = side_strs[1].iter().copied().rev().collect();
 
