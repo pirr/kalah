@@ -1,5 +1,3 @@
-use std::default;
-
 use super::game_config::GameConfig;
 use super::game_field::{ GameField, Side };
 use super::player::{ Player};
