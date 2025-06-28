@@ -16,6 +16,8 @@ pub struct GameProcess {
     pub swap_side_called: bool,
     #[cfg(feature = "test_hooks")]
     pub swap_players_called: bool,
+    #[cfg(feature = "test_hooks")]
+    pub game_finished: bool,
 }
 
 
@@ -46,6 +48,8 @@ impl GameProcess {
             swap_side_called: false,
             #[cfg(feature = "test_hooks")]
             swap_players_called: false,
+            #[cfg(feature = "test_hooks")]
+            game_finished: false,
         };
 
         game_process
@@ -172,6 +176,11 @@ impl GameProcess {
                 holes.iter().filter(|hole| hole.stones.len() > 0).next().is_none()
             })
             .any(|is_empty| is_empty);
+        
+        #[cfg(feature = "test_hooks")]
+        {
+            self.game_finished = true;
+        }
 
         return is_empty_side;
     }

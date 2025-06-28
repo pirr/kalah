@@ -135,3 +135,19 @@ fn test_swap_methods_called() {
     _ = game_process.move_stones_from_hole(2);
     assert!(!game_process.is_player_one_turn);
 }
+
+
+#[test]
+fn test_game_finish() {
+    let game_config = GameConfig::build(1, 1, true).unwrap();
+    let game_field = GameField::build(&game_config);
+
+    let player_one_name = "P1".to_string();
+    let player_two_name = "P2".to_string();
+
+    let mut game_process = GameProcess::build(game_field, player_one_name, player_two_name, game_config);
+
+    let _ = game_process.move_stones_from_hole(1);
+
+    assert!(game_process.game_finished);
+}
