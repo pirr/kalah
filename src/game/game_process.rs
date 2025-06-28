@@ -1,5 +1,7 @@
+use std::usize;
+
 use super::game_config::GameConfig;
-use super::game_field::{ GameField, Side };
+use super::game_field::{ GameField, Side, Hole };
 use super::player::{ Player};
 use super::game_status::GameStatus;
 
@@ -175,27 +177,26 @@ impl GameProcess {
     }
 
     fn get_curren_side_mut(&mut self) -> &mut Side {
-        if self.is_player_one_turn {
-            &mut self.game_field.side_one
-        } else {
-            &mut self.game_field.side_two
+        match self.is_player_one_turn {
+            true => &mut self.game_field.side_one,
+            _ => &mut self.game_field.side_two,
         }
     }
 
     fn get_curren_side(&self) -> &Side {
-        if self.is_player_one_turn {
-            &self.game_field.side_one
-        } else {
-            &self.game_field.side_two
+        match self.is_player_one_turn {
+            true => &self.game_field.side_one,
+            _ => &self.game_field.side_two,
         }
     }
 
     fn finalize_score(&mut self) {
-        for (side, player) in [(&self.game_field.side_one, &mut self.player_one), (&self.game_field.side_two, &mut self.player_two)] {
-            for hole in &side.holes {
-                player.score += hole.stones.len();
-            }
-        }
+        self.player_one.score += Self::count_holes_stouns(&self.game_field.side_one.holes);
+        self.player_one.score += Self::count_holes_stouns(&self.game_field.side_two.holes);
+    }
+
+    fn count_holes_stouns(holes: &[Hole]) -> usize {
+        holes.iter().map(|h| h.stones.len()).sum()
     }
 
     fn change_side(&mut self, hole_index: usize, active_side: u8) {
